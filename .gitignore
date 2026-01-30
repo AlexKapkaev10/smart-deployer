@@ -1,5 +1,5 @@
 .deps
 .states
-
 artifacts
-contract/artifacts
+contracts/artifacts
+lib/
