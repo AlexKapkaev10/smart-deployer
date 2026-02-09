@@ -1,17 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.29;
 
-import "../IUtilityContract.sol";
+import "../UtilityContract/AbstractUtilityContract.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract ERC721Airdroper is IUtilityContract, Ownable {
-    constructor() Ownable(msg.sender) {}
+contract ERC721Airdroper is AbstractUtilityContract, Ownable {
+    constructor() Ownable(msg.sender) payable {}
+
+    uint256 constant public MAX_AIRDROP_BATCH_SIZE = 300;
 
     IERC721 public token;
     address public treasury;
 
     error AlreadyInitialized();
+    error BatchSizeExceeded();
     error ArraysLengthMismatch();
     error NeedToApproveTokens();
 
@@ -22,16 +25,20 @@ contract ERC721Airdroper is IUtilityContract, Ownable {
 
     bool private initialized;
 
-    function airdrop(address[] calldata receivers, uint256[] calldata tokenId) external onlyOwner {
-        require(receivers.length == tokenId.length, ArraysLengthMismatch());
+    function airdrop(address[] calldata receivers, uint256[] calldata tokenIds) external onlyOwner {
+        require(tokenIds.length <= MAX_AIRDROP_BATCH_SIZE, BatchSizeExceeded());
+        require(receivers.length == tokenIds.length, ArraysLengthMismatch());
         require(token.isApprovedForAll(treasury, address(this)), NeedToApproveTokens());
 
-        for (uint256 i = 0; i < tokenId.length; i++) {
-            token.safeTransferFrom(treasury, receivers[i], tokenId[i]);
+        address treasuryAddress = treasury;
+
+        for (uint256 i = 0; i < tokenIds.length;) {
+            token.safeTransferFrom(treasuryAddress, receivers[i], tokenIds[i]);
+            unchecked { ++i; }
         }
     }
 
-    function initialize(bytes memory _initData) external notInitialized returns (bool) {
+    function initialize(bytes memory _initData) external override notInitialized returns (bool) {
         (address _token, address _treasury, address _owner) = abi.decode(_initData, (address, address, address));
 
         token = IERC721(_token);

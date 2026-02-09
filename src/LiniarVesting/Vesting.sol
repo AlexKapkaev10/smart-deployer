@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.29;
 
-import "../IUtilityContract.sol";
+import "../UtilityContract/AbstractUtilityContract.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract Vesting is IUtilityContract, Ownable {
-    constructor() Ownable(msg.sender) {}
+contract Vesting is AbstractUtilityContract, Ownable {
+    constructor() Ownable(msg.sender) payable {}
 
     IERC20 public token;
     bool private initialized;
@@ -126,7 +126,7 @@ contract Vesting is IUtilityContract, Ownable {
             minClaimAmount: _minClaimAmount
         });
 
-        allocatedTokens += _totalAmount;
+        allocatedTokens = allocatedTokens + _totalAmount;
 
         emit VestingCreated(_beneficiary, _totalAmount, block.timestamp);
     }
@@ -140,7 +140,7 @@ contract Vesting is IUtilityContract, Ownable {
         emit TokensWithdrawn(_to, available);
     }
 
-    function initialize(bytes memory _initData) external notInitialized returns (bool) {
+    function initialize(bytes memory _initData) external override notInitialized returns (bool) {
         (address _token, address _owner) = abi.decode(_initData, (address, address));
 
         token = IERC20(_token);
