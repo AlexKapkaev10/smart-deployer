@@ -6,19 +6,19 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract ERC20Airdroper is AbstractUtilityContract, Ownable {
-    constructor() Ownable(msg.sender) payable {}
+    constructor() payable Ownable(msg.sender) {}
 
-    uint256 constant public MAX_AIRDROP_BATCH_SIZE = 300;
+    uint256 public constant MAX_AIRDROP_BATCH_SIZE = 300;
 
     IERC20 public token;
     uint256 public amount;
     address public treasury;
 
     error AlreadyInitialized();
-    error BatchSizeExceeded();
     error ArraysLengthMismatch();
     error NotEnoughApprovedTokens();
     error TransferFailed();
+    error BatchSizeExceeded();
 
     modifier notInitialized() {
         require(!initialized, AlreadyInitialized());
@@ -36,13 +36,17 @@ contract ERC20Airdroper is AbstractUtilityContract, Ownable {
 
         for (uint256 i = 0; i < receivers.length;) {
             require(token.transferFrom(treasuryAddress, receivers[i], amounts[i]), TransferFailed());
-            unchecked { ++i; }
+            unchecked {
+                ++i;
+            }
         }
     }
 
     function initialize(bytes memory _initData) external override notInitialized returns (bool) {
-        (address _token, uint256 _amount, address _treasury, address _owner) =
-            abi.decode(_initData, (address, uint256, address, address));
+        (address _deployManager, address _token, uint256 _amount, address _treasury, address _owner) =
+            abi.decode(_initData, (address, address, uint256, address, address));
+
+        setDeployManager(_deployManager);
 
         token = IERC20(_token);
         amount = _amount;
@@ -54,11 +58,11 @@ contract ERC20Airdroper is AbstractUtilityContract, Ownable {
         return true;
     }
 
-    function getInitData(address _token, uint256 _amount, address _treasury, address _owner)
+    function getInitData(address _deployManager, address _token, uint256 _amount, address _treasury, address _owner)
         external
         pure
         returns (bytes memory)
     {
-        return abi.encode(_token, _amount, _treasury, _owner);
+        return abi.encode(_deployManager, _token, _amount, _treasury, _owner);
     }
 }

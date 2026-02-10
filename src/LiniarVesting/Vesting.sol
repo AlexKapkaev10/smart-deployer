@@ -141,8 +141,9 @@ contract Vesting is AbstractUtilityContract, Ownable {
     }
 
     function initialize(bytes memory _initData) external override notInitialized returns (bool) {
-        (address _token, address _owner) = abi.decode(_initData, (address, address));
+        ( address _deployManager, address _token, address _owner) = abi.decode(_initData, (address, address, address));
 
+        setDeployManager(_deployManager);
         token = IERC20(_token);
         Ownable.transferOwnership(_owner);
 
@@ -150,7 +151,7 @@ contract Vesting is AbstractUtilityContract, Ownable {
         return true;
     }
 
-    function getInitData(address _token, address _owner) external pure returns (bytes memory) {
-        return abi.encode(_token, _owner);
+    function getInitData(address _deployManager, address _token, address _owner) external pure returns (bytes memory) {
+        return abi.encode(_deployManager, _token, _owner);
     }
 }
