@@ -2,59 +2,64 @@
 pragma solidity ^0.8.29;
 
 import "../UtilityContract/AbstractUtilityContract.sol";
+import "./IVesting.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract Vesting is AbstractUtilityContract, Ownable {
+/// @title Vesting
+/// @author Aleksandr Kapkaev
+/// @notice Linear vesting utility contract initialized by DeployManager clone flow
+/// @dev Supports per-beneficiary schedules with cliff, linear unlock, cooldown, and minimal claim amount
+contract Vesting is IVesting, AbstractUtilityContract, Ownable {
     constructor() Ownable(msg.sender) payable {}
 
+    /// @notice ERC20 token distributed by vesting schedules
     IERC20 public token;
+
+    /// @dev Initialization guard for clone pattern
     bool private initialized;
+
+    /// @notice Sum of all tokens currently reserved by active vesting schedules
     uint256 public allocatedTokens;
 
+    /// @notice Per-beneficiary vesting schedule data
     struct VestingInfo {
+        /// @dev Total amount allocated for this beneficiary
         uint256 totalAmount;
+
+        /// @dev Vesting start timestamp
         uint256 startTime;
+
+        /// @dev Cliff duration in seconds counted from startTime
         uint256 cliff;
+
+        /// @dev Total linear vesting duration in seconds
         uint256 duration;
+
+        /// @dev Total amount already claimed
         uint256 claimed;
+
+        /// @dev Timestamp of last successful claim
         uint256 lastClaimTime;
+
+        /// @dev Minimum seconds between two claims
         uint256 claimCooldown;
+
+        /// @dev Minimum amount required to execute one claim
         uint256 minClaimAmount;
     }
 
+    /// @notice Beneficiary address => vesting schedule
     mapping(address => VestingInfo) public vestings;
 
-    event VestingCreated(address beneficiary, uint256 amount, uint256 creationTime);
-    event TokensWithdrawn(address to, uint256 amount);
-
-    error AlreadyInitialized();
-    error VestingNotFound();
-    error CliffNotReached();
-    error TransferFailed();
-    error NothingToClaim();
-    error InfsufficientBalance();
-    error VestingAlreadyExist();
-    error AmountCantBeZero();
-    error StartTimeShouldBeFuture();
-    error DurationCantBeZero();
-    error CliffCantBeLongerThanDuration();
-    error CooldownCantBeLongerThanDuration();
-    error InvalidBeneficiary();
-    error BelowMinimalClaimAmount();
-    error CooldownNotPassed();
-    error CantClaimMoreThanTotalAmount();
-    error WithdrawTransferFailed();
-    error NothingToWithdraw();
-
-    event Claim(address beneficiary, uint256 amount, uint256 timestamp);
-
+    /// @dev Reverts when initialize was already called
     modifier notInitialized() {
         require(!initialized, AlreadyInitialized());
         _;
     }
 
-    function claim() public {
+    /// @inheritdoc IVesting
+    function claim() public override {
         VestingInfo storage vesting = vestings[msg.sender];
 
         require(vesting.totalAmount > 0, VestingNotFound());
@@ -75,6 +80,9 @@ contract Vesting is AbstractUtilityContract, Ownable {
         emit Claim(msg.sender, claimable, block.timestamp);
     }
 
+    /// @notice Returns total vested amount (including already claimed part)
+    /// @param _claimer Beneficiary address
+    /// @return Amount that should be vested at current timestamp
     function vestedAmount(address _claimer) internal view returns (uint256) {
         VestingInfo storage vesting = vestings[_claimer];
         if (block.timestamp < vesting.startTime + vesting.cliff) return 0;
@@ -86,13 +94,15 @@ contract Vesting is AbstractUtilityContract, Ownable {
         return (vesting.totalAmount * passedTime) / vesting.duration;
     }
 
-    function claimableAmount(address _claimer) public view returns (uint256) {
+    /// @inheritdoc IVesting
+    function claimableAmount(address _claimer) public view override returns (uint256) {
         VestingInfo storage vesting = vestings[_claimer];
         if (block.timestamp < vesting.startTime + vesting.cliff) return 0;
 
         return vestedAmount(_claimer) - vesting.claimed;
     }
 
+    /// @inheritdoc IVesting
     function startVesting(
         address _beneficiary,
         uint256 _totalAmount,
@@ -101,7 +111,7 @@ contract Vesting is AbstractUtilityContract, Ownable {
         uint256 _duration,
         uint256 _claimCooldown,
         uint256 _minClaimAmount
-    ) external onlyOwner {
+    ) external override onlyOwner {
         require(token.balanceOf(address(this)) - allocatedTokens >= _totalAmount, InfsufficientBalance());
         require(_totalAmount > 0, AmountCantBeZero());
         require(
@@ -131,7 +141,8 @@ contract Vesting is AbstractUtilityContract, Ownable {
         emit VestingCreated(_beneficiary, _totalAmount, block.timestamp);
     }
 
-    function withdrawUnallocated(address _to) external onlyOwner {
+    /// @inheritdoc IVesting
+    function withdrawUnallocated(address _to) external override onlyOwner {
         uint256 available = token.balanceOf(address(this)) - allocatedTokens;
         require(available > 0, NothingToWithdraw());
 
@@ -140,7 +151,9 @@ contract Vesting is AbstractUtilityContract, Ownable {
         emit TokensWithdrawn(_to, available);
     }
 
-    function initialize(bytes memory _initData) external override notInitialized returns (bool) {
+    /// @inheritdoc IUtilityContract
+    /// @dev Decodes (_deployManager, _token, _owner) and configures contract once
+    function initialize(bytes memory _initData) external override(AbstractUtilityContract, IUtilityContract) notInitialized returns (bool) {
         ( address _deployManager, address _token, address _owner) = abi.decode(_initData, (address, address, address));
 
         setDeployManager(_deployManager);
@@ -151,7 +164,8 @@ contract Vesting is AbstractUtilityContract, Ownable {
         return true;
     }
 
-    function getInitData(address _deployManager, address _token, address _owner) external pure returns (bytes memory) {
+    /// @inheritdoc IVesting
+    function getInitData(address _deployManager, address _token, address _owner) external pure override returns (bytes memory) {
         return abi.encode(_deployManager, _token, _owner);
     }
 }
