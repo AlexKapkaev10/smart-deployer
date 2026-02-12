@@ -24,9 +24,6 @@ contract ERC20Airdroper is AbstractUtilityContract, Ownable {
     /// @notice Source wallet from which tokens are transferred
     address public treasury;
 
-    /// @dev Reverts when initialize is called more than once
-    error AlreadyInitialized();
-
     /// @dev Reverts when receivers and amounts arrays have different lengths
     error ArraysLengthMismatch();
 
@@ -38,14 +35,6 @@ contract ERC20Airdroper is AbstractUtilityContract, Ownable {
 
     /// @dev Reverts when batch size exceeds MAX_AIRDROP_BATCH_SIZE
     error BatchSizeExceeded();
-
-    /// @dev Reverts when contract is already initialized
-    modifier notInitialized() {
-        require(!initialized, AlreadyInitialized());
-        _;
-    }
-
-    bool private initialized;
 
     /// @notice Executes batch ERC20 transfers from treasury to receivers
     /// @param receivers Recipient addresses

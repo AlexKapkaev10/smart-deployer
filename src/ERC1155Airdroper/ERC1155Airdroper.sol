@@ -21,9 +21,6 @@ contract ERC1155Airdroper is AbstractUtilityContract, Ownable {
     /// @notice Source wallet from which tokens are transferred
     address public treasury;
 
-    /// @dev Reverts when initialize is called more than once
-    error AlreadyInitialized();
-
     /// @dev Reverts when receivers and tokenIds arrays have different lengths
     error ReciversLengthMismatch();
 
@@ -35,14 +32,6 @@ contract ERC1155Airdroper is AbstractUtilityContract, Ownable {
 
     /// @dev Reverts when this contract is not approved as operator for treasury
     error NeedToApproveTokens();
-
-    /// @dev Reverts when contract is already initialized
-    modifier notInitialized() {
-        require(!initialized, AlreadyInitialized());
-        _;
-    }
-
-    bool private initialized;
 
     /// @notice Executes batch ERC1155 transfers from treasury to receivers
     /// @param receivers Recipient addresses

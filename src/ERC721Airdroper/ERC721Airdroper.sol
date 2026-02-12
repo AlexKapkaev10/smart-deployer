@@ -21,9 +21,6 @@ contract ERC721Airdroper is AbstractUtilityContract, Ownable {
     /// @notice Source wallet from which NFTs are transferred
     address public treasury;
 
-    /// @dev Reverts when initialize is called more than once
-    error AlreadyInitialized();
-
     /// @dev Reverts when batch size exceeds MAX_AIRDROP_BATCH_SIZE
     error BatchSizeExceeded();
 
@@ -32,14 +29,6 @@ contract ERC721Airdroper is AbstractUtilityContract, Ownable {
 
     /// @dev Reverts when this contract is not approved as operator for treasury
     error NeedToApproveTokens();
-
-    /// @dev Reverts when contract is already initialized
-    modifier notInitialized() {
-        require(!initialized, AlreadyInitialized());
-        _;
-    }
-
-    bool private initialized;
 
     /// @notice Executes batch ERC721 transfers from treasury to receivers
     /// @param receivers Recipient addresses
