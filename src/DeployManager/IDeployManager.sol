@@ -8,6 +8,20 @@ import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 /// @notice Interface for DeployManager contract, including custom errors, events, and external API
 interface IDeployManager is IERC165 {
     // ----------------------------------------------------------------------
+    // Structs
+    // ----------------------------------------------------------------------
+
+    /// @dev Stores registered contract information
+    /// @param fee Deployment fee in wei
+    /// @param isDeployable Show deployable status
+    /// @param registeredAt Timestamp when the contract was registered
+    struct ContractInfo {
+        uint256 fee;
+        bool isDeployable;
+        uint256 registeredAt;
+    }
+
+    // ----------------------------------------------------------------------
     // Errors
     // ----------------------------------------------------------------------
 

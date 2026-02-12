@@ -7,25 +7,18 @@ import "@openzeppelin/contracts/proxy/Clones.sol";
 import "../UtilityContract/IUtilityContract.sol";
 import "./IDeployManager.sol";
 
-/// @title DeployManager
+/// @title DeployManager - Factory for utility contracts
 /// @author Aleksandr Kapkaev
-/// @notice Allows users to deploy utility contracts by cloning registered templates
-/// @dev Uses OpenZeppelin Clones (minimal proxy), Ownable; templates must implement IUtilityContract
+/// @notice Allows users to deploy utility contracts by cloning registered templates.
+/// @dev Uses OpenZeppelin's Clones and Ownable; assumes templates implement IUtilityContract.
 contract DeployManager is IDeployManager, Ownable, ERC165 {
     constructor() payable Ownable(msg.sender) {}
-
-    /// @dev Stores registered contract information
-    struct ContractInfo {
-        uint256 fee; /// @notice Deployment fee in wei
-        bool isDeployable; /// @notice Show deployable status
-        uint256 registeredAt; /// @notice Timestamp when the contract was registered
-    }
 
     /// @dev Maps deployer address => an array of addresses of deployed contracts addresses
     mapping(address => address[]) public deployedContracts;
 
     /// @dev Maps registered contract address => registration data
-    mapping(address => ContractInfo) public contractsData;
+    mapping(address => IDeployManager.ContractInfo) public contractsData;
 
     /// @inheritdoc IDeployManager
     function deploy(address _utilityContract, bytes calldata _initData) external override payable returns (address) {
