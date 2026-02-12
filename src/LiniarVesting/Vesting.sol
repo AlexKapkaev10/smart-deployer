@@ -11,7 +11,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 /// @notice Linear vesting utility contract initialized by DeployManager clone flow
 /// @dev Supports per-beneficiary schedules with cliff, linear unlock, cooldown, and minimal claim amount
 contract Vesting is IVesting, AbstractUtilityContract, Ownable {
-    constructor() Ownable(msg.sender) payable {}
+    constructor() payable Ownable(msg.sender) {}
 
     /// @notice ERC20 token distributed by vesting schedules
     IERC20 public token;

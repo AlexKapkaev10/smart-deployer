@@ -10,7 +10,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 /// @notice Utility contract for batched ERC721 transfers from treasury to receivers
 /// @dev Contract must be approved as operator for treasury NFTs before airdrop
 contract ERC721Airdroper is AbstractUtilityContract, Ownable {
-    constructor() Ownable(msg.sender) payable {}
+    constructor() payable Ownable(msg.sender) {}
 
     /// @notice Maximum receivers count in one airdrop call
     uint256 constant public MAX_AIRDROP_BATCH_SIZE = 300;

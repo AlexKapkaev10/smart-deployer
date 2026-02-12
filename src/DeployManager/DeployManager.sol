@@ -12,7 +12,7 @@ import "./IDeployManager.sol";
 /// @notice Allows users to deploy utility contracts by cloning registered templates
 /// @dev Uses OpenZeppelin Clones (minimal proxy), Ownable; templates must implement IUtilityContract
 contract DeployManager is IDeployManager, Ownable, ERC165 {
-    constructor() Ownable(msg.sender) payable {}
+    constructor() payable Ownable(msg.sender) {}
 
     /// @dev Stores registered contract information
     struct ContractInfo {

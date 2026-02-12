@@ -10,7 +10,7 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 contract ERC20Mock is ERC20 {
     /// @notice Mints initial supply to recipient on deployment
     /// @param recipient Address that receives initial token supply
-    constructor(address recipient) ERC20("MyToken", "MTK") payable {
+    constructor(address recipient) payable ERC20("MyToken", "MTK") {
         _mint(recipient, 10000 * 10 ** decimals());
     }
 }
