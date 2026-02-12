@@ -6,12 +6,12 @@ import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import {IDeployManager} from "../DeployManager/IDeployManager.sol";
 import {IUtilityContract} from "./IUtilityContract.sol";
 
-/// @title AbstractUtilityContract
+/// @title AbstractUtilityContract - Abstract contract for utility contracts
 /// @author Aleksandr Kapkaev
-/// @notice Base implementation for utility contracts initialized via DeployManager
-/// @dev Validates deploy manager through ERC-165 interface detection
+/// @notice This abstract contract provides a base implementation for utility contracts
+/// @dev Utility contracts should inherit from this contract and implement initialize function
 abstract contract AbstractUtilityContract is IUtilityContract, ERC165 {
-    /// @notice DeployManager address assigned during initialization
+    /// @notice Address of DeployManager that deployed the current contract
     address public deployManager;
 
     /// @inheritdoc IUtilityContract
@@ -21,18 +21,19 @@ abstract contract AbstractUtilityContract is IUtilityContract, ERC165 {
         return true;
     }
 
-    /// @dev Sets and validates deploy manager address
-    /// @param _deployManager Candidate deploy manager address
+    /// @notice Internal function for setting and validating deploy manager address
+    /// @param _deployManager DeployManager address
     function setDeployManager(address _deployManager) internal virtual {
         if (!validateDeployManager(_deployManager)) {
-            revert FailedToDeployManager();
+            revert FailedToValidateDeployManager();
         }
         deployManager = _deployManager;
     }
 
-    /// @dev Ensures deploy manager address is non-zero and supports IDeployManager interface
-    /// @param _deployManager Candidate deploy manager address
-    /// @return True when validation succeeds
+    /// @dev Checks if the _deployManager address is valid DeployManager
+    /// @param _deployManager DeployManager address
+    /// @return True if valid
+    /// @dev Validates _deployManager is not zero address and supports IDeployManager interface
     function validateDeployManager(address _deployManager) internal view returns (bool) {
         if (_deployManager == address(0)) {
             revert DeployManagerCannotBeZero();
@@ -52,7 +53,7 @@ abstract contract AbstractUtilityContract is IUtilityContract, ERC165 {
         return deployManager;
     }
 
-    /// @dev ERC-165 support for IUtilityContract and inherited interfaces
+    /// @inheritdoc ERC165
     function supportsInterface(bytes4 interfaceId) public view virtual override(IERC165, ERC165) returns (bool) {
         return interfaceId == type(IUtilityContract).interfaceId || super.supportsInterface(interfaceId);
     }

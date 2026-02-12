@@ -9,33 +9,31 @@ import "./IDeployManager.sol";
 
 /// @title DeployManager
 /// @author Aleksandr Kapkaev
-/// @notice Registry and clone factory for utility contracts; owner registers templates (fee + active flag);
-///         anyone can deploy an EIP-1167 clone of an active template by paying at least the fee; fee is sent to owner
+/// @notice Allows users to deploy utility contracts by cloning registered templates
 /// @dev Uses OpenZeppelin Clones (minimal proxy), Ownable; templates must implement IUtilityContract
 contract DeployManager is IDeployManager, Ownable, ERC165 {
     constructor() Ownable(msg.sender) payable {}
 
-    /// @dev Per-template data: deployment fee, whether deploy is allowed, and registration time (0 = not registered)
+    /// @dev Stores registered contract information
     struct ContractInfo {
-        uint256 fee;
-        bool isActive;
-        uint256 registredAt;
+        uint256 fee; /// @notice Deployment fee in wei
+        bool isDeployable; /// @notice Show deployable status
+        uint256 registeredAt; /// @notice Timestamp when the contract was registered
     }
 
-    /// @dev Deployer address => list of clone addresses they deployed (append-only)
+    /// @dev Maps deployer address => an array of addresses of deployed contracts addresses
     mapping(address => address[]) public deployedContracts;
 
-    /// @dev Template address => registration data; registredAt > 0 means the template is registered
+    /// @dev Maps registered contract address => registration data
     mapping(address => ContractInfo) public contractsData;
 
     /// @inheritdoc IDeployManager
-    /// @dev Clones via Clones.clone, initializes with _initData, forwards full msg.value to owner (no refund for excess)
     function deploy(address _utilityContract, bytes calldata _initData) external override payable returns (address) {
         ContractInfo memory info = contractsData[_utilityContract];
 
-        require(info.isActive, ContractNotActive());
+        require(info.isDeployable, ContractNotActive());
         require(msg.value >= info.fee, NotEnoughFunds());
-        require(info.registredAt > 0, ContractNotRegistered());
+        require(info.registeredAt > 0, ContractNotRegistered());
 
         address clone = Clones.clone(_utilityContract);
 
@@ -52,16 +50,20 @@ contract DeployManager is IDeployManager, Ownable, ERC165 {
     }
 
     /// @inheritdoc IDeployManager
-    /// @dev Overwrites existing registration if _contractAddress was already registered
     function addNewContract(address _contractAddress, uint256 _fee, bool _isActive) external override onlyOwner {
-        require(IUtilityContract(_contractAddress).supportsInterface(type(IUtilityContract).interfaceId), ContractIsNotUtilityContract());
-        contractsData[_contractAddress] = ContractInfo({fee: _fee, isActive: _isActive, registredAt: block.timestamp});
+        require(
+            IUtilityContract(_contractAddress).supportsInterface(type(IUtilityContract).interfaceId), 
+            ContractIsNotUtilityContract());
+
+        require(contractsData[_contractAddress].registeredAt == 0, ContractAlreadyRegistered());
+
+        contractsData[_contractAddress] = ContractInfo({fee: _fee, isDeployable: _isActive, registeredAt: block.timestamp});
         emit NewContractAdded(_contractAddress, _fee, _isActive, block.timestamp);
     }
 
     /// @inheritdoc IDeployManager
     function updateFee(address _contractAddress, uint256 _newFee) external override onlyOwner {
-        require(contractsData[_contractAddress].registredAt > 0, ContractNotRegistered());
+        require(contractsData[_contractAddress].registeredAt > 0, ContractNotRegistered());
 
         uint256 _oldFee = contractsData[_contractAddress].fee;
         contractsData[_contractAddress].fee = _newFee;
@@ -71,23 +73,23 @@ contract DeployManager is IDeployManager, Ownable, ERC165 {
 
     /// @inheritdoc IDeployManager
     function deactivateContract(address _address) external override onlyOwner {
-        require(contractsData[_address].registredAt > 0, ContractNotRegistered());
+        require(contractsData[_address].registeredAt > 0, ContractNotRegistered());
 
-        contractsData[_address].isActive = false;
+        contractsData[_address].isDeployable = false;
 
         emit ContractStatusUpdated(_address, false, block.timestamp);
     }
 
     /// @inheritdoc IDeployManager
     function activateContract(address _address) external override onlyOwner {
-        require(contractsData[_address].registredAt > 0, ContractNotRegistered());
+        require(contractsData[_address].registeredAt > 0, ContractNotRegistered());
 
-        contractsData[_address].isActive = true;
+        contractsData[_address].isDeployable = true;
 
         emit ContractStatusUpdated(_address, true, block.timestamp);
     }
 
-    /// @dev ERC-165: supports IDeployManager and inherited interfaces
+    /// @inheritdoc ERC165
     function supportsInterface(bytes4 interfaceId) public view virtual override(IERC165, ERC165) returns (bool) {
         return 
         interfaceId == type(IDeployManager).interfaceId || 
