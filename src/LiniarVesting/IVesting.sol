@@ -7,6 +7,29 @@ import "../UtilityContract/IUtilityContract.sol";
 /// @author Aleksandr Kapkaev
 /// @notice Interface for linear vesting utility contracts managed by DeployManager
 interface IVesting is IUtilityContract {
+    /// @notice Per-beneficiary vesting schedule data
+    struct VestingInfo {
+        uint256 totalAmount;
+        uint256 startTime;
+        uint256 cliff;
+        uint256 duration;
+        uint256 claimed;
+        uint256 lastClaimTime;
+        uint256 claimCooldown;
+        uint256 minClaimAmount;
+        bool isCreated;
+    }
+
+    struct VestingParams {
+        address beneficiary;
+        uint256 totalAmount;
+        uint256 startTime;
+        uint256 cliff;
+        uint256 duration;
+        uint256 claimCooldown;
+        uint256 minClaimAmount;
+    }
+
     // ----------------------------------------------------------------------
     // Errors
     // ----------------------------------------------------------------------
@@ -18,7 +41,7 @@ interface IVesting is IUtilityContract {
     error VestingNotFound();
 
     /// @dev Reverts when claim is attempted before the cliff period ends
-    error CliffNotReached();
+    error ClaimNotAvailable(uint256 blockTimestamp, uint256 avalableFrom);
 
     /// @dev Reverts when ERC20 transfer during claim fails
     error TransferFailed();
@@ -27,7 +50,7 @@ interface IVesting is IUtilityContract {
     error NothingToClaim();
 
     /// @dev Reverts when contract balance minus allocated tokens is lower than requested amount
-    error InfsufficientBalance();
+    error InfsufficientBalance(uint256 availableBalance, uint256 totalAmount);
 
     /// @dev Reverts when beneficiary already has an active vesting schedule
     error VestingAlreadyExist();
@@ -36,13 +59,10 @@ interface IVesting is IUtilityContract {
     error AmountCantBeZero();
 
     /// @dev Reverts when start timestamp is not in the future
-    error StartTimeShouldBeFuture();
+    error StartTimeShouldBeFuture(uint256 startTime, uint256 blockTimestamp);
 
     /// @dev Reverts when vesting duration is zero
     error DurationCantBeZero();
-
-    /// @dev Reverts when cliff is greater than or equal to duration
-    error CliffCantBeLongerThanDuration();
 
     /// @dev Reverts when claim cooldown is greater than or equal to duration
     error CooldownCantBeLongerThanDuration();
@@ -99,22 +119,8 @@ interface IVesting is IUtilityContract {
     function claimableAmount(address _claimer) external view returns (uint256);
 
     /// @notice Creates vesting schedule for beneficiary
-    /// @param _beneficiary Address that will receive vested tokens
-    /// @param _totalAmount Total amount to vest
-    /// @param _startTime Vesting start timestamp
-    /// @param _cliff Cliff duration in seconds after startTime
-    /// @param _duration Total vesting duration in seconds
-    /// @param _claimCooldown Minimum seconds between claims
-    /// @param _minClaimAmount Minimum amount allowed per claim
-    function startVesting(
-        address _beneficiary,
-        uint256 _totalAmount,
-        uint256 _startTime,
-        uint256 _cliff,
-        uint256 _duration,
-        uint256 _claimCooldown,
-        uint256 _minClaimAmount
-    ) external;
+    /// @param params Vesting parameters
+    function startVesting(VestingParams calldata params) external;
 
     /// @notice Withdraws tokens that are not allocated to active vesting schedules
     /// @param _to Receiver of withdrawn tokens

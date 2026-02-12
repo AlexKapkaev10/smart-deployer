@@ -22,35 +22,8 @@ contract Vesting is IVesting, AbstractUtilityContract, Ownable {
     /// @notice Sum of all tokens currently reserved by active vesting schedules
     uint256 public allocatedTokens;
 
-    /// @notice Per-beneficiary vesting schedule data
-    struct VestingInfo {
-        /// @dev Total amount allocated for this beneficiary
-        uint256 totalAmount;
-
-        /// @dev Vesting start timestamp
-        uint256 startTime;
-
-        /// @dev Cliff duration in seconds counted from startTime
-        uint256 cliff;
-
-        /// @dev Total linear vesting duration in seconds
-        uint256 duration;
-
-        /// @dev Total amount already claimed
-        uint256 claimed;
-
-        /// @dev Timestamp of last successful claim
-        uint256 lastClaimTime;
-
-        /// @dev Minimum seconds between two claims
-        uint256 claimCooldown;
-
-        /// @dev Minimum amount required to execute one claim
-        uint256 minClaimAmount;
-    }
-
     /// @notice Beneficiary address => vesting schedule
-    mapping(address => VestingInfo) public vestings;
+    mapping(address => IVesting.VestingInfo) public vestings;
 
     /// @dev Reverts when initialize was already called
     modifier notInitialized() {
@@ -103,42 +76,41 @@ contract Vesting is IVesting, AbstractUtilityContract, Ownable {
     }
 
     /// @inheritdoc IVesting
-    function startVesting(
-        address _beneficiary,
-        uint256 _totalAmount,
-        uint256 _startTime,
-        uint256 _cliff,
-        uint256 _duration,
-        uint256 _claimCooldown,
-        uint256 _minClaimAmount
-    ) external override onlyOwner {
-        require(token.balanceOf(address(this)) - allocatedTokens >= _totalAmount, InfsufficientBalance());
-        require(_totalAmount > 0, AmountCantBeZero());
-        require(
-            vestings[_beneficiary].totalAmount == 0
-                || vestings[_beneficiary].totalAmount == vestings[_beneficiary].claimed,
-            VestingAlreadyExist()
-        );
-        require(_startTime > block.timestamp, StartTimeShouldBeFuture());
-        require(_duration > 0, DurationCantBeZero());
-        require(_cliff < _duration, CliffCantBeLongerThanDuration());
-        require(_claimCooldown < _duration, CooldownCantBeLongerThanDuration());
-        require(_beneficiary != address(0), InvalidBeneficiary());
+    function startVesting(IVesting.VestingParams calldata params) external override onlyOwner {
+        if (params.beneficiary == address(0)) revert InvalidBeneficiary();
+        if (params.duration == 0) revert DurationCantBeZero();
+        if (params.totalAmount == 0) revert AmountCantBeZero();
 
-        vestings[_beneficiary] = VestingInfo({
-            totalAmount: _totalAmount,
-            startTime: _startTime,
-            cliff: _cliff,
-            duration: _duration,
-            claimed: 0,
-            lastClaimTime: 0,
-            claimCooldown: _claimCooldown,
-            minClaimAmount: _minClaimAmount
-        });
+        uint256 blockTimestamp = block.timestamp;
+        
+        if (params.startTime < blockTimestamp) revert StartTimeShouldBeFuture(params.startTime, blockTimestamp);
+        if (params.claimCooldown > params.duration) revert CooldownCantBeLongerThanDuration();
+        
+        uint256 availableBalance = token.balanceOf(address(this)) - allocatedTokens;
+        
+        if (availableBalance < params.totalAmount) revert InfsufficientBalance(availableBalance, params.totalAmount);
 
-        allocatedTokens = allocatedTokens + _totalAmount;
+        VestingInfo storage vesting = vestings[params.beneficiary];
 
-        emit VestingCreated(_beneficiary, _totalAmount, block.timestamp);
+        if (vesting.isCreated && vesting.totalAmount != vesting.claimed){
+            revert VestingAlreadyExist();
+        }
+
+        vesting.totalAmount = params.totalAmount;
+        vesting.startTime = params.startTime;
+        vesting.cliff = params.cliff;
+        vesting.duration = params.duration;
+        vesting.claimed = 0;
+        vesting.lastClaimTime = 0;
+        vesting.claimCooldown = params.claimCooldown;
+        vesting.minClaimAmount = params.minClaimAmount;
+        vesting.isCreated = true;
+
+        unchecked {
+            allocatedTokens = allocatedTokens + params.totalAmount;
+        }
+
+        emit VestingCreated(params.beneficiary, params.totalAmount, blockTimestamp);
     }
 
     /// @inheritdoc IVesting
