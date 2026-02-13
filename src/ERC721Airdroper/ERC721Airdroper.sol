@@ -13,7 +13,7 @@ contract ERC721Airdroper is AbstractUtilityContract, Ownable {
     constructor() payable Ownable(msg.sender) {}
 
     /// @notice Maximum receivers count in one airdrop call
-    uint256 constant public MAX_AIRDROP_BATCH_SIZE = 300;
+    uint256 public constant MAX_AIRDROP_BATCH_SIZE = 300;
 
     /// @notice ERC721 token distributed by this contract
     IERC721 public token;
@@ -59,7 +59,7 @@ contract ERC721Airdroper is AbstractUtilityContract, Ownable {
         token = IERC721(_token);
         treasury = _treasury;
 
-        Ownable.transferOwnership(_owner);
+        _transferOwnership(_owner);
 
         initialized = true;
         return true;

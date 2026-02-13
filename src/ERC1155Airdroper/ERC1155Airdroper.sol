@@ -13,7 +13,7 @@ contract ERC1155Airdroper is AbstractUtilityContract, Ownable {
     constructor() payable Ownable(msg.sender) {}
 
     /// @notice Maximum receivers count in one airdrop call
-    uint256 constant public MAX_AIRDROP_BATCH_SIZE = 10;
+    uint256 public constant MAX_AIRDROP_BATCH_SIZE = 10;
 
     /// @notice ERC1155 token distributed by this contract
     IERC1155 public token;
@@ -37,7 +37,10 @@ contract ERC1155Airdroper is AbstractUtilityContract, Ownable {
     /// @param receivers Recipient addresses
     /// @param amounts Transfer amounts per recipient
     /// @param tokenIds Token IDs to transfer
-    function airdrop(address[] calldata receivers, uint256[] calldata amounts, uint256[] calldata tokenIds) external onlyOwner {
+    function airdrop(address[] calldata receivers, uint256[] calldata amounts, uint256[] calldata tokenIds)
+        external
+        onlyOwner
+    {
         require(tokenIds.length <= MAX_AIRDROP_BATCH_SIZE, BatchSizeExceeded());
         require(receivers.length == tokenIds.length, ReciversLengthMismatch());
         require(amounts.length == tokenIds.length, AmountsLengthMismatch());
@@ -47,21 +50,24 @@ contract ERC1155Airdroper is AbstractUtilityContract, Ownable {
 
         for (uint256 i = 0; i < amounts.length;) {
             token.safeTransferFrom(treasuryAddress, receivers[i], tokenIds[i], amounts[i], "");
-            unchecked { ++i; }
+            unchecked {
+                ++i;
+            }
         }
     }
 
     /// @inheritdoc IUtilityContract
     /// @dev Decodes (_deployManager, _token, _treasury, _owner)
     function initialize(bytes memory _initData) external override notInitialized returns (bool) {
-        (address _deployManager, address _token, address _treasury, address _owner) = abi.decode(_initData, (address, address, address, address));
+        (address _deployManager, address _token, address _treasury, address _owner) =
+            abi.decode(_initData, (address, address, address, address));
 
         setDeployManager(_deployManager);
 
         token = IERC1155(_token);
         treasury = _treasury;
 
-        Ownable.transferOwnership(_owner);
+        _transferOwnership(_owner);
 
         initialized = true;
         return true;
@@ -73,7 +79,11 @@ contract ERC1155Airdroper is AbstractUtilityContract, Ownable {
     /// @param _treasury Source wallet for token transfers
     /// @param _owner Owner of deployed clone
     /// @return Encoded init data for initialize
-    function getInitData(address _deployManager, address _token, address _treasury, address _owner) external pure returns (bytes memory) {
+    function getInitData(address _deployManager, address _token, address _treasury, address _owner)
+        external
+        pure
+        returns (bytes memory)
+    {
         return abi.encode(_deployManager, _token, _treasury, _owner);
     }
 }

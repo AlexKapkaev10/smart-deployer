@@ -21,7 +21,7 @@ contract DeployManager is IDeployManager, Ownable, ERC165 {
     mapping(address => IDeployManager.ContractInfo) public contractsData;
 
     /// @inheritdoc IDeployManager
-    function deploy(address _utilityContract, bytes calldata _initData) external override payable returns (address) {
+    function deploy(address _utilityContract, bytes calldata _initData) external payable override returns (address) {
         ContractInfo memory info = contractsData[_utilityContract];
 
         require(info.isDeployable, ContractNotActive());
@@ -32,7 +32,7 @@ contract DeployManager is IDeployManager, Ownable, ERC165 {
 
         require(IUtilityContract(clone).initialize(_initData), InitializationFailed());
 
-        (bool success, ) = payable(owner()).call{value: msg.value}("");
+        (bool success,) = payable(owner()).call{value: msg.value}("");
         require(success, TransferFailed());
 
         deployedContracts[msg.sender].push(clone);
@@ -45,12 +45,14 @@ contract DeployManager is IDeployManager, Ownable, ERC165 {
     /// @inheritdoc IDeployManager
     function addNewContract(address _contractAddress, uint256 _fee, bool _isActive) external override onlyOwner {
         require(
-            IUtilityContract(_contractAddress).supportsInterface(type(IUtilityContract).interfaceId), 
-            ContractIsNotUtilityContract());
+            IUtilityContract(_contractAddress).supportsInterface(type(IUtilityContract).interfaceId),
+            ContractIsNotUtilityContract()
+        );
 
         require(contractsData[_contractAddress].registeredAt == 0, ContractAlreadyRegistered());
 
-        contractsData[_contractAddress] = ContractInfo({fee: _fee, isDeployable: _isActive, registeredAt: block.timestamp});
+        contractsData[_contractAddress] =
+            ContractInfo({fee: _fee, isDeployable: _isActive, registeredAt: block.timestamp});
         emit NewContractAdded(_contractAddress, _fee, _isActive, block.timestamp);
     }
 
@@ -84,8 +86,6 @@ contract DeployManager is IDeployManager, Ownable, ERC165 {
 
     /// @inheritdoc ERC165
     function supportsInterface(bytes4 interfaceId) public view virtual override(IERC165, ERC165) returns (bool) {
-        return 
-        interfaceId == type(IDeployManager).interfaceId || 
-        super.supportsInterface(interfaceId);
+        return interfaceId == type(IDeployManager).interfaceId || super.supportsInterface(interfaceId);
     }
 }

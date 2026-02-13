@@ -66,7 +66,7 @@ contract ERC20Airdroper is AbstractUtilityContract, Ownable {
         amount = _amount;
         treasury = _treasury;
 
-        Ownable.transferOwnership(_owner);
+        _transferOwnership(_owner);
 
         initialized = true;
         return true;
