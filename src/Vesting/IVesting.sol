@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.29;
 
-import "../UtilityContract/IUtilityContract.sol";
-
 /// @title Vesting Interface
 /// @notice Provides a standard interface for token vesting contracts
-interface IVesting is IUtilityContract {
+interface IVesting {
     /// @notice Information about a beneficiary's vesting schedule
     /// @param totalAmount Total number of tokens to be vested
     /// @param startTime Timestamp when vesting begins
@@ -25,10 +23,10 @@ interface IVesting is IUtilityContract {
         uint256 lastClaimTime;
         uint256 claimCooldown;
         uint256 minClaimAmount;
-        bool isCreated;
+        bool created;
     }
 
-    /// @notice Parameters for creating a new vesting schedule
+    /// @notice Parameters for creating a new vesting schedule in startVesting function
     /// @param beneficiary Address that will receive vested tokens
     /// @param totalAmount Total number of tokens to be vested
     /// @param startTime Timestamp when vesting begins
@@ -46,10 +44,6 @@ interface IVesting is IUtilityContract {
         uint256 minClaimAmount;
     }
 
-    // ----------------------------------------------------------------------
-    // Events
-    // ----------------------------------------------------------------------
-
     /// @notice Emitted when a new vesting schedule is created
     /// @param beneficiary Address of the beneficiary
     /// @param amount Total number of tokens to be vested
@@ -66,10 +60,6 @@ interface IVesting is IUtilityContract {
     /// @param amount Number of tokens claimed
     /// @param timestamp Timestamp when the claim was made
     event Claim(address indexed beneficiary, uint256 amount, uint256 timestamp);
-
-    // ----------------------------------------------------------------------
-    // Errors
-    // ----------------------------------------------------------------------
 
     /// @notice Reverts if the vesting schedule does not exist for the beneficiary
     error VestingNotFound();
@@ -120,10 +110,6 @@ interface IVesting is IUtilityContract {
     /// @notice Reverts if there are no tokens available to withdraw
     error NothingToWithdraw();
 
-    // ----------------------------------------------------------------------
-    // Functions
-    // ----------------------------------------------------------------------
-
     /// @notice Claims all tokens currently available for the caller according to their vesting schedule
     function claim() external;
 
@@ -144,6 +130,11 @@ interface IVesting is IUtilityContract {
     /// @notice Withdraws all unallocated tokens from the contract to the specified address
     /// @param _to Address to receive the withdrawn tokens
     function withdrawUnallocated(address _to) external;
+
+    /// @notice Returns the information about a vesting schedule for a beneficiary
+    /// @param _claimer Address of the beneficiary
+    /// @return VestingInfo struct containing the vesting information
+    function getVestingInfo(address _claimer) external view returns (VestingInfo memory);
 
     /// @notice Returns the ABI-encoded initialization data for the contract
     /// @param _deployManager Address of the deploy manager

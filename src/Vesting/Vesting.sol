@@ -13,7 +13,7 @@ import "./IVesting.sol";
 /// @dev Inherits IVesting, AbstractUtilityContract, Ownable
 contract Vesting is IVesting, AbstractUtilityContract, Ownable {
     using VestingLib for IVesting.VestingInfo;
-    
+
     /// @notice Initializes the contract with deploy manager, token, and owner
     constructor() payable Ownable(msg.sender) {}
 
@@ -30,14 +30,14 @@ contract Vesting is IVesting, AbstractUtilityContract, Ownable {
     function claim() public {
         address claimer = msg.sender;
         VestingInfo storage vesting = vestings[claimer];
-        if (!vesting.isCreated) revert VestingNotFound();
+        if (!vesting.created) revert VestingNotFound();
         uint256 blockTimestamp = block.timestamp;
 
         if (blockTimestamp < vesting.startTime + vesting.cliff) {
             revert ClaimNotAvailable(blockTimestamp, vesting.startTime + vesting.cliff);
         }
 
-        if (blockTimestamp <= vesting.lastClaimTime + vesting.claimCooldown) {
+        if (vesting.lastClaimTime != 0 && blockTimestamp <= vesting.lastClaimTime + vesting.claimCooldown) {
             revert CooldownNotPassed(blockTimestamp, vesting.lastClaimTime);
         }
 
@@ -82,7 +82,7 @@ contract Vesting is IVesting, AbstractUtilityContract, Ownable {
 
         VestingInfo storage vesting = vestings[params.beneficiary];
 
-        if (vesting.isCreated) {
+        if (vesting.created) {
             if (vesting.totalAmount != vesting.claimed) revert VestingAlreadyExist();
         }
 
@@ -94,7 +94,7 @@ contract Vesting is IVesting, AbstractUtilityContract, Ownable {
         vesting.minClaimAmount = params.minClaimAmount;
         vesting.claimed = 0;
         vesting.lastClaimTime = 0;
-        vesting.isCreated = true;
+        vesting.created = true;
 
         unchecked {
             allocatedTokens = allocatedTokens + params.totalAmount;
@@ -115,7 +115,7 @@ contract Vesting is IVesting, AbstractUtilityContract, Ownable {
     }
 
     /// @inheritdoc AbstractUtilityContract
-    function initialize(bytes memory _initData) external override(AbstractUtilityContract, IUtilityContract) notInitialized returns (bool) {
+    function initialize(bytes memory _initData) external override notInitialized returns (bool) {
         (address _deployManager, address _token, address _owner) = abi.decode(_initData, (address, address, address));
 
         setDeployManager(_deployManager);
@@ -138,11 +138,12 @@ contract Vesting is IVesting, AbstractUtilityContract, Ownable {
     }
 
     /// @inheritdoc IVesting
-    function getInitData(
-        address _deployManager, 
-        address _token, 
-        address _owner) 
-    external pure override returns (bytes memory) {
+    function getVestingInfo(address _claimer) public view returns (IVesting.VestingInfo memory) {
+        return vestings[_claimer];
+    }
+
+    /// @inheritdoc IVesting
+    function getInitData(address _deployManager, address _token, address _owner) external pure returns (bytes memory) {
         return abi.encode(_deployManager, _token, _owner);
     }
 }
