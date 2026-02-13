@@ -121,7 +121,7 @@ contract Vesting is IVesting, AbstractUtilityContract, Ownable {
         setDeployManager(_deployManager);
 
         token = IERC20(_token);
-        Ownable.transferOwnership(_owner);
+        _transferOwnership(_owner);
 
         initialized = true;
         return true;

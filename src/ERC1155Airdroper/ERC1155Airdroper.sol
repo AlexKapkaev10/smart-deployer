@@ -67,7 +67,7 @@ contract ERC1155Airdroper is AbstractUtilityContract, Ownable {
         token = IERC1155(_token);
         treasury = _treasury;
 
-        Ownable.transferOwnership(_owner);
+        _transferOwnership(_owner);
 
         initialized = true;
         return true;
