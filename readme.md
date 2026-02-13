@@ -1,71 +1,57 @@
-## Foundry
+# Smart Deployer
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+Smart Deployer is a universal solution for organizing and managing paid smart contract deployments.
 
-Foundry consists of:
+📚 [Contracts documentation](https://alexkapkaev10.github.io/smart-deployer/book/)
 
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+🧾 Every contract in this repository is fully documented using NatSpec — including deployment instructions, configuration details, and extensibility tips. Developed by Solidity University, following best practices and released under the MIT license, allows developers to:
 
-## Documentation
+- Deploy your own `DeployManager.sol`
+- Create & connect utility contracts using [template](https://github.com/AlexKapkaev10/smart-deployer/blob/main/src/UtilityContract/AbstractUtilityContract.sol)
+- Monetize the deployment of utility contracts
+- Enable\disable contracts, fees any time
 
-https://book.getfoundry.sh/
 
-## Usage
+---
 
-### Build
+## 🚀 Getting Started
 
-```shell
-$ forge build
+To start working with this repository, clone it and install all necessary dependencies.
+
+```bash
+git clone https://github.com/AlexKapkaev10/smart-deployer.git
+cd smart-deployer
+yarn install
 ```
 
-### Test
+> ✅ Make sure you have [Foundry](https://book.getfoundry.sh/getting-started/installation) installed globally before continuing:
 
-```shell
-$ forge test
+---
+
+## 🛠 Build the Project
+
+Compile the contracts using:
+
+```bash
+forge build
 ```
 
-### Format
+You can run 🧪 tests using:
 
-```shell
-$ forge fmt
+```bash
+forge test
 ```
 
-### Gas Snapshots
+## 📚 Generate Documentation
 
-```shell
-$ forge snapshot
+To generate contract documentation:
+
+```bash
+forge doc --build --out docs
 ```
 
-### Semgrep
-```powershell
-$ semgrep --config "p/smart-contracts" src/
-```
+The generated documentation will be available in the `docs/` folder and automatically deploy to [github pages](https://alexkapkaev10.github.io/smart-deployer/book/). Make sure there is no `.gitignore` file inside `docs/`.
 
-### Anvil
+---
 
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+Feel free to contribute or open issues to improve the project 💡
