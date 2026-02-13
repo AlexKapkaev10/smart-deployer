@@ -29,7 +29,11 @@ jobs:
 
       - name: Install dependencies
         run: |
-          forge install --no-commit foundry-rs/forge-std OpenZeppelin/openzeppelin-contracts
+          if [ -d lib/forge-std ] && [ -d lib/openzeppelin-contracts ]; then
+            echo "Dependencies already present"
+          else
+            forge install --no-git foundry-rs/forge-std OpenZeppelin/openzeppelin-contracts
+          fi
 
       - name: Run Forge fmt
         run: |
